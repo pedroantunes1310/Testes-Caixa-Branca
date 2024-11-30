@@ -1,100 +1,262 @@
-# Projeto de Conexão com Banco de Dados - Teste de Caixa Branca
+# Projeto de Conexão com Banco de Dados - Etapa 4
 
-Este projeto tem como objetivo verificar e testar um código de conexão com banco de dados utilizando o padrão de teste **caixa branca**. O código foi analisado em busca de possíveis **erros** e **melhorias**.
+## 🚀 Etapa 4: Correções no Código e Implementação da Documentação Javadoc
 
-## 💻 Descrição do Projeto
-
-O código fornecido é responsável por realizar a conexão com um banco de dados MySQL e verificar as credenciais de um usuário (login e senha). Ele faz isso por meio de uma consulta SQL e exibe o nome do usuário caso as credenciais sejam válidas.
+Nesta etapa, corrigimos o código para implementar boas práticas de programação, como o uso de **PreparedStatement** para evitar SQL Injection, o correto tratamento de exceções, e o fechamento adequado da conexão com o banco de dados utilizando **try-with-resources**. Além disso, foi implementada a **documentação Javadoc** para todas as classes e métodos, proporcionando uma visão clara das funcionalidades do código.
 
 ---
 
-## 🛠️ **Erros Identificados e Melhorias Sugeridas**
+## 🛠️ Melhorias Implementadas no Código
 
-Aqui estão os erros detectados durante o **Teste Estático** e as **melhorias** propostas:
+### 1. **Uso de PreparedStatement**
+- O código agora utiliza **PreparedStatement** para evitar **SQL Injection**, substituindo a concatenação de strings no método `verificarUsuario()`. Isso garante que os parâmetros da consulta SQL sejam passados de forma segura.
 
-### 1. **Driver MySQL Desatualizado**
+### 2. **Tratamento Adequado de Exceções**
+- Corrigimos o tratamento de exceções utilizando **SQLException** e **ClassNotFoundException**, o que permite um melhor controle de erros durante a execução do código.
 
-- **Erro Identificado:**
-  Na linha onde o driver de conexão é carregado:
-  ```java
-  Class.forName("com.mysql.Driver.Manager").newInstance();
-O driver utilizado está incorreto e não é mais suportado nas versões recentes do MySQL.
+### 3. **Fechamento de Recursos (try-with-resources)**
+- Implementamos o **try-with-resources** para garantir que a conexão com o banco de dados, os statements e os ResultSets sejam fechados automaticamente após o uso, evitando vazamentos de recursos.
 
-- **Correção Sugerida:**
-  Substituir pela versão correta do driver para MySQL:
-  ```java
-  Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
-
-### 2. **Falta de Tratamento Adequado de Exceções**
-
-- **Erro Identificado:**
-  No bloco try-catch, quando ocorre uma exceção, o código não realiza nenhum tratamento:
-  ```java
-  catch (Exception e) {
-    // Nenhum tratamento ou log do erro
-  }
-  
-- **Correção Sugerida:**
-  Adicionar um log ou printStackTrace para visualizar os erros durante a execução. Isso facilita o debug do código:
-  ```java
-  catch (Exception e) {
-    e.printStackTrace(); // ou log para registrar o erro
-  }
-
-### 3. **Risco de Injeção de SQL**
-
-- **Erro Identificado:**
-  A consulta SQL é montada concatenando diretamente as entradas do usuário (login e senha):
-  ```java
-  sql += "select nome from usuarios where login = '" + login + "' and senha = '" + senha + "';";
-Essa prática é insegura e vulnerável a injeção de SQL, um ataque que pode comprometer a segurança do banco de dados.
-
-- **Correção Sugerida:**
-  Utilizar PreparedStatements, que previnem injeção de SQL, parametrizando as consultas:
-  ```java
-  String sql = "SELECT nome FROM usuarios WHERE login = ? AND senha = ?";
-  PreparedStatement ps = conn.prepareStatement(sql);
-  ps.setString(1, login);
-  ps.setString(2, senha);
-
-### 4. **Falta de Fechamento da Conexão com o Banco**
-
-- **Erro Identificado:**
-  O código não fecha a conexão com o banco de dados e outros recursos como Statement e ResultSet, o que pode causar vazamento de recursos:
-  ```java
-  // Nenhum fechamento da conexão ou dos recursos
-
-- **Correção Sugerida:**
-  Adicionar um bloco finally ou utilizar try-with-resources para garantir o fechamento dos recursos após seu uso:
-  ```java
-  try (Connection conn = DriverManager.getConnection(url);
-     PreparedStatement ps = conn.prepareStatement(sql)) {
-     // código aqui
-  } catch (Exception e) {
-      e.printStackTrace();
-  }
-
-### 5. **Credenciais Hardcoded no Código**
-
-- **Erro Identificado:**
-  As credenciais de acesso ao banco de dados estão hardcoded no código:
-  ```java
-  String url = "jdbc:mysql:localhost/connectiondb?user=admin&password=master";
-
-- **Correção Sugerida:**
-  As credenciais devem ser armazenadas em um arquivo de configuração externo ou em variáveis de ambiente para aumentar a segurança e facilitar a manutenção:
-  ```java
-  // Exemplo usando variáveis de ambiente
-  String user = System.getenv("DB_USER");
-  String password = System.getenv("DB_PASSWORD");
-  String url = "jdbc:mysql://localhost/connectiondb?user=" + user + "&password=" + password;
+### 4. **Uso de Variáveis de Ambiente para Credenciais**
+- As credenciais do banco de dados agora são armazenadas em **variáveis de ambiente** (ex: `DB_USER` e `DB_PASSWORD`), aumentando a segurança e facilitando a configuração em diferentes ambientes.
 
 ---
 
-## 📋 **Conclusão
+## 📋 Código Corrigido
 
-Este projeto demonstrou a importância de seguir boas práticas de programação, especialmente no que diz respeito à segurança e ao manuseio de exceções. As melhorias propostas visam tornar o código mais seguro, robusto e preparado para cenários reais de uso em produção.
+```java
+package Login;
 
-## Dependency Management
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/pedroantunes1310/Testes-Caixa-Branca).
+/**
+ * Classe User que realiza a conexão com o banco de dados MySQL
+ * e verifica as credenciais de login e senha.
+ */
+public class User {
+
+    // URL de conexão, utilizando variáveis de ambiente para proteger as credenciais
+    private static final String URL = "jdbc:mysql://localhost/connectiondb";
+    private static final String USER = System.getenv("DB_USER");  // Variável de ambiente para o usuário
+    private static final String PASSWORD = System.getenv("DB_PASSWORD");  // Variável de ambiente para a senha
+
+    /**
+     * Conecta ao banco de dados MySQL.
+     * 
+     * @return Um objeto {@link Connection} representando a conexão com o banco de dados.
+     * @throws SQLException Se ocorrer um erro na conexão com o banco de dados.
+     */
+    public Connection conectarBD() throws SQLException {
+        Connection conn;
+        try {
+            // Carregar o driver MySQL
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            // Estabelecer a conexão com o banco de dados
+            conn = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException e) {
+            // Lidar com erro de driver não encontrado
+            throw new SQLException("Driver MySQL não encontrado.", e);
+        }
+        return conn;
+    }
+
+    /**
+     * Nome do usuário após o login bem-sucedido.
+     */
+    public String nome = "";
+
+    /**
+     * Resultado da verificação de login.
+     * Será {@code true} se o login for bem-sucedido, {@code false} caso contrário.
+     */
+    public boolean result = false;
+
+    /**
+     * Verifica se o login do usuário e a senha são válidos.
+     * 
+     * @param login O nome de usuário fornecido.
+     * @param senha A senha fornecida.
+     * @return {@code true} se o login e senha forem válidos, {@code false} caso contrário.
+     * @throws SQLException Se ocorrer um erro ao consultar o banco de dados.
+     */
+    public boolean verificarUsuario(String login, String senha) throws SQLException {
+        String sql = "SELECT nome FROM usuarios WHERE login = ? AND senha = ?";
+        
+        // Usando try-with-resources para garantir o fechamento dos recursos (conexão, PreparedStatement e ResultSet)
+        try (Connection conn = conectarBD();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+             
+            // Definir os parâmetros para a consulta SQL
+            ps.setString(1, login);
+            ps.setString(2, senha);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    // Login válido, salvar o nome do usuário
+                    result = true;
+                    nome = rs.getString("nome");
+                } else {
+                    // Login ou senha inválidos
+                    result = false;
+                }
+            }
+        } catch (SQLException e) {
+            // Tratamento de exceção no caso de erro de consulta ou conexão
+            throw new SQLException("Erro ao verificar o usuário no banco de dados.", e);
+        }
+        return result;
+    }
+}
+
+
+💻👾 Vamos criar o README.md da Etapa 4, focando nas correções e implementação da documentação Javadoc!
+
+Na Etapa 4, fizemos correções no código original, aplicamos as melhores práticas para conexão JDBC e implementamos a documentação Javadoc para facilitar a compreensão e a manutenção do código. Agora, vamos montar o README.md descrevendo essas mudanças e a inclusão da documentação Javadoc.
+
+📜 README.md para a Etapa 4:
+
+# Projeto de Conexão com Banco de Dados - Etapa 4
+
+## 🚀 Etapa 4: Correções no Código e Implementação da Documentação Javadoc
+
+Nesta etapa, corrigimos o código para implementar boas práticas de programação, como o uso de **PreparedStatement** para evitar SQL Injection, o correto tratamento de exceções, e o fechamento adequado da conexão com o banco de dados utilizando **try-with-resources**. Além disso, foi implementada a **documentação Javadoc** para todas as classes e métodos, proporcionando uma visão clara das funcionalidades do código.
+
+---
+
+## 🛠️ Melhorias Implementadas no Código
+
+### 1. **Uso de PreparedStatement**
+- O código agora utiliza **PreparedStatement** para evitar **SQL Injection**, substituindo a concatenação de strings no método `verificarUsuario()`. Isso garante que os parâmetros da consulta SQL sejam passados de forma segura.
+
+### 2. **Tratamento Adequado de Exceções**
+- Corrigimos o tratamento de exceções utilizando **SQLException** e **ClassNotFoundException**, o que permite um melhor controle de erros durante a execução do código.
+
+### 3. **Fechamento de Recursos (try-with-resources)**
+- Implementamos o **try-with-resources** para garantir que a conexão com o banco de dados, os statements e os ResultSets sejam fechados automaticamente após o uso, evitando vazamentos de recursos.
+
+### 4. **Uso de Variáveis de Ambiente para Credenciais**
+- As credenciais do banco de dados agora são armazenadas em **variáveis de ambiente** (ex: `DB_USER` e `DB_PASSWORD`), aumentando a segurança e facilitando a configuração em diferentes ambientes.
+
+---
+
+## 📋 Código Corrigido
+
+```java
+package Login;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * Classe User que realiza a conexão com o banco de dados MySQL
+ * e verifica as credenciais de login e senha.
+ */
+public class User {
+
+    // URL de conexão, utilizando variáveis de ambiente para proteger as credenciais
+    private static final String URL = "jdbc:mysql://localhost/connectiondb";
+    private static final String USER = System.getenv("DB_USER");  // Variável de ambiente para o usuário
+    private static final String PASSWORD = System.getenv("DB_PASSWORD");  // Variável de ambiente para a senha
+
+    /**
+     * Conecta ao banco de dados MySQL.
+     * 
+     * @return Um objeto {@link Connection} representando a conexão com o banco de dados.
+     * @throws SQLException Se ocorrer um erro na conexão com o banco de dados.
+     */
+    public Connection conectarBD() throws SQLException {
+        Connection conn;
+        try {
+            // Carregar o driver MySQL
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            // Estabelecer a conexão com o banco de dados
+            conn = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException e) {
+            // Lidar com erro de driver não encontrado
+            throw new SQLException("Driver MySQL não encontrado.", e);
+        }
+        return conn;
+    }
+
+    /**
+     * Nome do usuário após o login bem-sucedido.
+     */
+    public String nome = "";
+
+    /**
+     * Resultado da verificação de login.
+     * Será {@code true} se o login for bem-sucedido, {@code false} caso contrário.
+     */
+    public boolean result = false;
+
+    /**
+     * Verifica se o login do usuário e a senha são válidos.
+     * 
+     * @param login O nome de usuário fornecido.
+     * @param senha A senha fornecida.
+     * @return {@code true} se o login e senha forem válidos, {@code false} caso contrário.
+     * @throws SQLException Se ocorrer um erro ao consultar o banco de dados.
+     */
+    public boolean verificarUsuario(String login, String senha) throws SQLException {
+        String sql = "SELECT nome FROM usuarios WHERE login = ? AND senha = ?";
+        
+        // Usando try-with-resources para garantir o fechamento dos recursos (conexão, PreparedStatement e ResultSet)
+        try (Connection conn = conectarBD();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+             
+            // Definir os parâmetros para a consulta SQL
+            ps.setString(1, login);
+            ps.setString(2, senha);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    // Login válido, salvar o nome do usuário
+                    result = true;
+                    nome = rs.getString("nome");
+                } else {
+                    // Login ou senha inválidos
+                    result = false;
+                }
+            }
+        } catch (SQLException e) {
+            // Tratamento de exceção no caso de erro de consulta ou conexão
+            throw new SQLException("Erro ao verificar o usuário no banco de dados.", e);
+        }
+        return result;
+    }
+}
+
+📖 Implementação do Javadoc
+A documentação Javadoc foi gerada para todas as classes e métodos do projeto, descrevendo o comportamento de cada função e as variáveis públicas utilizadas.
+
+Como Gerar a Documentação Javadoc
+Para gerar a documentação Javadoc, execute o seguinte comando no terminal do VS Code:
+
+javadoc -d ./docs -sourcepath ./src -subpackages Login
+Isso criará a pasta docs com todos os arquivos HTML da documentação Javadoc.
+
+Como Acessar a Documentação
+Após gerar o Javadoc, você pode acessar a documentação abrindo o arquivo index.html na pasta docs em um navegador.
+
+---
+
+### 📂 **Explicação do `README.md`**:
+
+1. **Melhorias Implementadas**:
+   - Detalha as correções que foram aplicadas no código, como o uso de **PreparedStatement**, tratamento de exceções e variáveis de ambiente.
+
+2. **Código Corrigido**:
+   - Exibe o código completo com todas as melhorias implementadas e os comentários Javadoc.
+
+3. **Geração e Acesso ao Javadoc**:
+   - Explica como gerar a documentação Javadoc e como acessá-la na pasta `docs`.
+
+
+---
