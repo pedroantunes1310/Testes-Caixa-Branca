@@ -10,7 +10,7 @@ Nesta etapa, realizamos a análise de **Caixa Branca** do código do projeto, qu
 
 O grafo de fluxo abaixo representa o caminho de execução do código:
 
-![Grafo de Fluxo de Controle](./docs/fluxo_de_controle.png)
+![Grafo de Fluxo de Controle](./docs\puml\out\assets\puml\grafo\grafo.png)
 
 **Explicação do Grafo:**
 1. **Ponto de Entrada**: A execução do código começa com o método `conectarBD()`, onde tentamos carregar o driver MySQL.
