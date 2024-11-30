@@ -1,0 +1,35 @@
+@startuml
+start
+
+:Carregar driver (Nodo 1);
+if (Driver carregado?) then (Sim)
+    :Definir URL de conexão (Nodo 2);
+    :Tentar conectar ao banco (Nodo 3);
+    if (Conexão OK?) then (Sim)
+        :Retornar conexão (Nodo 5);
+    else (Não)
+        :Tratamento de exceção (Nodo 4);
+        :Retornar null (Nodo 5);
+    endif
+else (Não)
+    :Tratamento de exceção (Nodo 4);
+endif
+
+:Verificar usuário (Nodo 8);
+:Montar SQL (Nodo 9, 10, 11);
+if (Conexão OK?) then (Sim)
+    :Criar statement (Nodo 13);
+    :Executar query (Nodo 14);
+    if (Resultado encontrado?) then (Sim)
+        :Atribuir result = true (Nodo 16);
+        :Atribuir nome do usuário (Nodo 17);
+    else (Não)
+        :Atribuir result = false (Nodo 15);
+    endif
+else (Não)
+    :Tratamento de exceção (Nodo 18);
+endif
+
+:Retornar resultado (Nodo 19);
+stop
+@enduml
